@@ -109,38 +109,12 @@ export default function GameHUD({
         <p className="text-[9px] md:text-[10px] text-white/70 truncate max-w-[250px] md:max-w-[400px]">{goal}</p>
       </div>
 
-      {/* Health trends bar */}
-      {gfitConnected && (
-        <div className="flex items-center justify-center gap-4 px-3 py-1.5 bg-teal-900/40 border-b border-teal-700/30">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
-            <span className="font-pixel text-[7px] text-teal-400">FITBIT</span>
-          </span>
-
-          {!healthTrends && (
-            <span className="text-[10px] text-sky-400 animate-pulse">loading...</span>
-          )}
-
-          {healthTrends?.current.restingHR != null && (
-            <span className="text-[10px] text-red-400">
-              ❤️ {healthTrends.current.restingHR}
-              <Delta value={healthTrends.deltas.restingHR} unit="bpm" invert />
-            </span>
-          )}
-
-          {healthTrends?.current.stepsToday != null && (
-            <span className="text-[10px] text-emerald-400">
-              👟 {healthTrends.current.stepsToday.toLocaleString()}
-              <Delta value={healthTrends.deltas.dailySteps} unit="" />
-            </span>
-          )}
-
-          {healthTrends?.current.activeMinutes != null && (
-            <span className="text-[10px] text-amber-400">
-              ⚡ {healthTrends.current.activeMinutes}m
-              <Delta value={healthTrends.deltas.activeMinutes} unit="m" />
-            </span>
-          )}
+      {/* Fitbit connected indicator (full insights panel is rendered separately) */}
+      {gfitConnected && !healthTrends && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-teal-900/40 border-b border-teal-700/30">
+          <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
+          <span className="font-pixel text-[7px] text-teal-400">FITBIT</span>
+          <span className="text-[10px] text-sky-400 animate-pulse">loading...</span>
         </div>
       )}
 

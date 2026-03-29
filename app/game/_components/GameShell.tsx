@@ -21,6 +21,7 @@ import ChatPanel from './ChatPanel'
 import StormOverlay from './StormOverlay'
 import CompletionScreen from './CompletionScreen'
 import FitbitConnectModal from './FitbitConnectModal'
+import HealthInsightsPanel from './HealthInsightsPanel'
 
 export default function GameShell() {
   const router = useRouter()
@@ -307,6 +308,11 @@ export default function GameShell() {
         isWalking={isWalking}
         chatOpen={showChat}
       />
+
+      {/* Health Insights */}
+      {gfitConnected && healthTrends && (
+        <HealthInsightsPanel trends={healthTrends} currentSession={state.currentSession} />
+      )}
 
       {/* Game Level */}
       <div className="flex-1 flex items-end relative">
