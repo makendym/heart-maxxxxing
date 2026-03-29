@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   type GameState,
@@ -40,6 +40,8 @@ export default function GameShell() {
   const [gfitConnected, setGfitConnected] = useState(false)
   const [healthTrends, setHealthTrends] = useState<HealthTrends | null>(null)
   const [showConnectModal, setShowConnectModal] = useState(false)
+  const [musicPlaying, setMusicPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Load state on mount
   useEffect(() => {
@@ -58,6 +60,29 @@ export default function GameShell() {
   useEffect(() => {
     setGfitConnected(document.cookie.includes('fitbit_connected=true'))
   }, [])
+
+  // Initialize background music
+  useEffect(() => {
+    const audio = new Audio('/01. Ground Theme.mp3')
+    audio.loop = true
+    audio.volume = 0.3
+    audioRef.current = audio
+    return () => {
+      audio.pause()
+      audio.src = ''
+    }
+  }, [])
+
+  const toggleMusic = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (musicPlaying) {
+      audio.pause()
+      setMusicPlaying(false)
+    } else {
+      audio.play().then(() => setMusicPlaying(true)).catch(() => {})
+    }
+  }, [musicPlaying])
 
   // Fetch health trends once state is loaded and connected
   // Program starts Nov 1 2025, 3 sessions/week with 2-3-2 day gaps
@@ -307,11 +332,17 @@ export default function GameShell() {
         sessionDisabled={isWalking || state.currentSession >= TOTAL_SESSIONS}
         isWalking={isWalking}
         chatOpen={showChat}
+        musicPlaying={musicPlaying}
+        onToggleMusic={toggleMusic}
       />
 
       {/* Health Insights */}
       {gfitConnected && healthTrends && (
-        <HealthInsightsPanel trends={healthTrends} currentSession={state.currentSession} />
+        <HealthInsightsPanel
+          trends={healthTrends}
+          currentSession={state.currentSession}
+          hideMilestone={!!activePowerup}
+        />
       )}
 
       {/* Game Level */}

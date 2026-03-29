@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const system = buildCoachPrompt(gameState, healthTrends ?? undefined)
 
   const result = streamText({
-    model: google('	gemini-3.1-flash-lite-preview'),
+    model: google('gemini-3.1-flash-lite-preview'),
     system,
     messages: await convertToModelMessages(messages),
     temperature: 0.85,

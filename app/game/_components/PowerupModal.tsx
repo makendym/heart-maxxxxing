@@ -1,6 +1,7 @@
 'use client'
 
 import { type Powerup, getPowerupColor } from '../../lib/powerups'
+import PhIcon from './PhIcon'
 
 interface PowerupModalProps {
   powerup: Powerup
@@ -18,11 +19,13 @@ export default function PowerupModal({ powerup, loading, onClose }: PowerupModal
         <div className={`bg-gradient-to-br ${gradientClass} rounded-2xl p-1 shadow-2xl`}>
           <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-6 text-center">
             {/* Icon */}
-            <div className="text-5xl mb-3">{powerup.icon}</div>
+            <div className="mb-3 flex justify-center">
+              <PhIcon name={powerup.icon} size={48} className="text-white" />
+            </div>
 
             {/* Type label */}
             <div className="font-pixel text-[9px] text-gray-400 uppercase tracking-wider mb-2">
-              {powerup.type === 'celebration' ? 'Final Reward' : `Session ${powerup.session} Reward`}
+              {powerup.type === 'celebration' ? 'Session 36' : `Session ${powerup.session}`}
             </div>
 
             {/* Title */}

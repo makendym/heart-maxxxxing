@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { type GameState } from '../../lib/game-state'
+import { type GameState, LANGUAGE_OPTIONS } from '../../lib/game-state'
 import { getQuickReplies } from '../../lib/coach-prompt'
 import type { HealthTrends } from '../../lib/fitbit'
+import { SpeakerHigh, SpeakerSlash, X, Stop, Play, Microphone } from '@phosphor-icons/react'
 import LuigiIcon from './LuigiIcon'
 
 interface ChatPanelProps {
@@ -15,13 +16,24 @@ interface ChatPanelProps {
 }
 
 /** Map BCP-47 language code to speech synthesis / recognition locale */
+const SPEECH_LANG_MAP: Record<string, string> = {
+  en: 'en-US', hi: 'hi-IN', es: 'es-ES', zh: 'zh-CN', ar: 'ar-SA',
+  pt: 'pt-BR', fr: 'fr-FR', de: 'de-DE', ja: 'ja-JP', ko: 'ko-KR',
+  ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN', ur: 'ur-PK',
+}
+
 function getSpeechLang(code: string): string {
+  return SPEECH_LANG_MAP[code] || 'en-US'
+}
+
+/** Short label for the language pill */
+function getLangLabel(code: string): string {
   const map: Record<string, string> = {
-    en: 'en-US', hi: 'hi-IN', es: 'es-ES', zh: 'zh-CN', ar: 'ar-SA',
-    pt: 'pt-BR', fr: 'fr-FR', de: 'de-DE', ja: 'ja-JP', ko: 'ko-KR',
-    ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN', ur: 'ur-PK',
+    en: 'EN', hi: 'हि', es: 'ES', zh: '中', ar: 'عر',
+    pt: 'PT', fr: 'FR', de: 'DE', ja: '日', ko: '한',
+    ta: 'த', te: 'తె', bn: 'বা', ur: 'ار',
   }
-  return map[code] || 'en-US'
+  return map[code] || code.toUpperCase()
 }
 
 export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelProps) {
@@ -29,12 +41,14 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
   const [isListening, setIsListening] = useState(false)
   const [autoSpeak, setAutoSpeak] = useState(true)
   const [speakingId, setSpeakingId] = useState<string | null>(null)
+  const [sttLang, setSttLang] = useState(state.profile.language || 'en')
+  const [showLangPicker, setShowLangPicker] = useState(false)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const lastSpokenRef = useRef<string | null>(null)
   const quickReplies = useMemo(() => getQuickReplies(state), [state])
-  const speechLang = getSpeechLang(state.profile.language || 'en')
+  const speechLang = getSpeechLang(sttLang)
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -193,7 +207,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
                 }`}
                 title={autoSpeak ? 'Auto-speak on' : 'Auto-speak off'}
               >
-                {autoSpeak ? '🔊' : '🔇'}
+                {autoSpeak ? <SpeakerHigh size={14} weight="fill" /> : <SpeakerSlash size={14} weight="fill" />}
               </button>
             )}
             <button
@@ -203,7 +217,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
               }}
               className="w-8 h-8 flex items-center justify-center text-sky-400 hover:text-white hover:bg-sky-800 rounded-lg transition-colors"
             >
-              ✕
+              <X size={16} weight="bold" />
             </button>
           </div>
         </div>
@@ -253,7 +267,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
                           }`}
                           title={speakingId === message.id ? 'Stop' : 'Listen'}
                         >
-                          {speakingId === message.id ? '⏹' : '▶'}
+                          {speakingId === message.id ? <Stop size={12} weight="fill" /> : <Play size={12} weight="fill" />}
                         </button>
                       )}
                     </span>
@@ -308,18 +322,52 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
               className="flex-1 px-3 py-2 bg-sky-900/60 border border-sky-700/40 rounded-lg text-white text-sm placeholder:text-sky-600 focus:outline-none focus:border-emerald-500/60 transition-colors disabled:opacity-50"
             />
             {hasSpeech && (
-              <button
-                type="button"
-                onClick={toggleVoice}
-                className={`px-3 py-2 rounded-lg text-sm transition-colors active:scale-95 ${
-                  isListening
-                    ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
-                    : 'bg-sky-800 hover:bg-sky-700 text-sky-300 hover:text-white'
-                }`}
-                title={isListening ? 'Stop listening' : 'Voice input'}
-              >
-                🎤
-              </button>
+              <div className="relative flex items-center">
+                {/* Language pill — tap to open picker */}
+                <button
+                  type="button"
+                  onClick={() => setShowLangPicker(!showLangPicker)}
+                  className="px-1.5 py-2 bg-sky-900 hover:bg-sky-800 text-sky-400 text-[10px] font-bold rounded-l-lg border-r border-sky-700/40 transition-colors"
+                  title="Change voice language"
+                >
+                  {getLangLabel(sttLang)}
+                </button>
+                {/* Mic button */}
+                <button
+                  type="button"
+                  onClick={toggleVoice}
+                  className={`px-3 py-2 rounded-r-lg text-sm transition-colors active:scale-95 ${
+                    isListening
+                      ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
+                      : 'bg-sky-800 hover:bg-sky-700 text-sky-300 hover:text-white'
+                  }`}
+                  title={isListening ? 'Stop listening' : `Voice input (${getLangLabel(sttLang)})`}
+                >
+                  <Microphone size={18} weight="fill" />
+                </button>
+                {/* Language picker dropdown */}
+                {showLangPicker && (
+                  <div className="absolute bottom-full right-0 mb-1 bg-sky-950 border border-sky-700/50 rounded-lg shadow-xl overflow-hidden z-50 max-h-48 overflow-y-auto no-scrollbar">
+                    {LANGUAGE_OPTIONS.map((l) => (
+                      <button
+                        key={l.code}
+                        type="button"
+                        onClick={() => {
+                          setSttLang(l.code)
+                          setShowLangPicker(false)
+                        }}
+                        className={`w-full px-3 py-1.5 text-left text-xs whitespace-nowrap transition-colors ${
+                          sttLang === l.code
+                            ? 'bg-emerald-800/40 text-emerald-400'
+                            : 'text-sky-300 hover:bg-sky-800'
+                        }`}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             <button
               type="submit"

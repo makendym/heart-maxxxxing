@@ -1,5 +1,7 @@
 'use client'
 
+import { Watch } from '@phosphor-icons/react'
+
 interface FitbitConnectModalProps {
   onClose: () => void
 }
@@ -9,7 +11,7 @@ export default function FitbitConnectModal({ onClose }: FitbitConnectModalProps)
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="modal-enter w-full max-w-sm">
         <div className="bg-sky-950/95 border-2 border-teal-500/40 rounded-2xl p-6 shadow-2xl text-center">
-          <div className="text-5xl mb-4">⌚</div>
+          <div className="mb-4 flex justify-center"><Watch size={48} weight="fill" className="text-teal-400" /></div>
 
           <h2 className="font-pixel text-sm text-teal-400 mb-3 leading-relaxed">
             CONNECT FITBIT

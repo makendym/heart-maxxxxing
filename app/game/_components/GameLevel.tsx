@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import { TOTAL_SESSIONS, hasBrickAt } from '../../lib/game-state'
 import Character from './Character'
 import Brick from './Brick'
+import PhIcon from './PhIcon'
 
 interface GameLevelProps {
   currentSession: number
@@ -17,11 +18,11 @@ interface GameLevelProps {
   onBrickClick: (session: number) => void
 }
 
-/** Map powerup type index to an emoji that pops out of the brick */
+/** Map brick session → Phosphor icon name that pops out */
 const POWERUP_POP_ICONS: Record<number, string> = {
-  3: '🍄', 6: '🎯', 9: '💌', 12: '⭐', 15: '❤️',
-  18: '🍄', 21: '🎯', 24: '💌', 27: '🏆', 30: '❤️',
-  33: '🍄', 36: '👑',
+  3: 'target', 6: 'leaf', 9: 'envelope', 12: 'star', 15: 'heartbeat',
+  18: 'target', 21: 'leaf', 24: 'envelope', 27: 'star', 30: 'heartbeat',
+  33: 'target', 36: 'crown',
 }
 
 const BLOCK_WIDTH = 80
@@ -212,7 +213,7 @@ export default function GameLevel({
                     grabbingPowerup ? 'powerup-grabbed' : 'powerup-popping'
                   }`}
                 >
-                  {POWERUP_POP_ICONS[session] || '🍄'}
+                  <PhIcon name={POWERUP_POP_ICONS[session] || 'sparkle'} size={28} className="text-white drop-shadow-lg" />
                 </div>
               )}
               <div className={isBumping ? 'brick-bumping' : ''}>
@@ -290,9 +291,7 @@ export default function GameLevel({
                     {session}
                   </span>
                   {isCompleted && (
-                    <span className="text-yellow-300 text-[8px] drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
-                      ✓
-                    </span>
+                    <PhIcon name="check" size={10} className="text-yellow-300 drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]" />
                   )}
                 </div>
               </div>

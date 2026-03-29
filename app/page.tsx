@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadState, saveState, DEFAULT_STATE, DEFAULT_PROFILE, LANGUAGE_OPTIONS, ETHNICITY_OPTIONS, type PatientProfile } from './lib/game-state'
+import { Heart, Play, CaretDown, CaretRight } from '@phosphor-icons/react'
 
 const FLOATING_HEARTS = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -103,7 +104,7 @@ export default function WelcomePage() {
             fontSize: `${h.size}px`,
           }}
         >
-          ♥
+          <Heart size={Math.round(h.size)} weight="fill" />
         </div>
       ))}
 
@@ -126,7 +127,7 @@ export default function WelcomePage() {
       <div className="relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto no-scrollbar">
         {/* Title */}
         <div className="text-center mb-6">
-          <div className="text-6xl mb-4">❤️</div>
+          <div className="mb-4 flex justify-center"><Heart size={56} weight="fill" className="text-red-500" /></div>
           <h1 className="font-pixel text-2xl md:text-3xl text-red-400 mb-2 leading-relaxed">
             HEART
           </h1>
@@ -146,7 +147,7 @@ export default function WelcomePage() {
               onClick={handleContinue}
               className="w-full mb-6 py-4 px-6 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-pixel text-xs rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-900/40"
             >
-              ▶ CONTINUE JOURNEY
+              <Play size={14} weight="fill" className="inline mr-1" /> CONTINUE JOURNEY
             </button>
           )}
 
@@ -203,7 +204,8 @@ export default function WelcomePage() {
               className="w-full mb-4 py-2 text-sky-400 hover:text-sky-300 text-xs flex items-center justify-center gap-2 transition-colors"
             >
               <span className="font-pixel text-[9px]">
-                {showProfile ? '▼ HIDE' : '▶ EDIT'} MEDICAL PROFILE
+                {showProfile ? <CaretDown size={12} weight="bold" className="inline mr-1" /> : <CaretRight size={12} weight="bold" className="inline mr-1" />}
+                {showProfile ? 'HIDE' : 'EDIT'} MEDICAL PROFILE
               </span>
             </button>
 
@@ -308,7 +310,7 @@ export default function WelcomePage() {
                   <div className="space-y-1.5">
                     {DEFAULT_PROFILE.rehabPlan.acts.map((act) => (
                       <div key={act.id} className="flex items-center gap-2 text-[11px]">
-                        <span className="text-amber-400">▸</span>
+                        <CaretRight size={12} weight="bold" className="text-amber-400" />
                         <span className="text-white/80">{act.title}</span>
                         <span className="text-sky-500">({act.missionsCount} sessions)</span>
                       </div>
@@ -326,7 +328,7 @@ export default function WelcomePage() {
               disabled={!name.trim() || !goal.trim()}
               className="w-full py-4 px-6 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-pixel text-xs rounded-xl transition-all active:scale-95 shadow-lg shadow-red-900/40 disabled:shadow-none"
             >
-              {hasExisting ? 'START NEW JOURNEY' : '♥ BEGIN YOUR QUEST'}
+              {hasExisting ? 'START NEW JOURNEY' : <><Heart size={14} weight="fill" className="inline mr-1" /> BEGIN YOUR QUEST</>}
             </button>
           </div>
         </div>

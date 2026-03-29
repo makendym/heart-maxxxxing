@@ -4,6 +4,7 @@ import HeartMeter from './HeartMeter'
 import LuigiIcon from './LuigiIcon'
 import { TOTAL_SESSIONS } from '../../lib/game-state'
 import type { HealthTrends } from '../../lib/fitbit'
+import { Check, Heart, Watch, MusicNote, MusicNoteSimple } from '@phosphor-icons/react'
 
 interface GameHUDProps {
   hearts: number
@@ -19,6 +20,8 @@ interface GameHUDProps {
   sessionDisabled: boolean
   isWalking: boolean
   chatOpen: boolean
+  musicPlaying: boolean
+  onToggleMusic: () => void
 }
 
 function Delta({ value, unit, invert }: { value?: number; unit: string; invert?: boolean }) {
@@ -47,6 +50,8 @@ export default function GameHUD({
   sessionDisabled,
   isWalking,
   chatOpen,
+  musicPlaying,
+  onToggleMusic,
 }: GameHUDProps) {
   const progress = Math.round((currentSession / TOTAL_SESSIONS) * 100)
   const isComplete = currentSession >= TOTAL_SESSIONS
@@ -62,10 +67,10 @@ export default function GameHUD({
           className="py-2 px-2.5 md:px-4 bg-[#e02020] hover:bg-[#ff3030] disabled:bg-[#444] disabled:cursor-not-allowed text-white font-pixel text-[7px] md:text-[10px] border-[3px] border-t-[#ff6060] border-l-[#ff6060] border-b-[#800000] border-r-[#800000] disabled:border-[#555] transition-all active:scale-95 shrink-0 whitespace-nowrap"
         >
           {isComplete
-            ? '✓ DONE!'
+            ? <><Check size={12} weight="bold" className="inline" /> DONE!</>
             : isWalking
               ? '...'
-              : `♥ SESSION ${currentSession + 1}`}
+              : <><Heart size={12} weight="fill" className="inline" /> SESSION {currentSession + 1}</>}
         </button>
 
         {/* Center: Player info + session + progress */}
@@ -103,10 +108,23 @@ export default function GameHUD({
         </button>
       </div>
 
-      {/* Goal bar */}
-      <div className="flex items-center justify-center gap-1.5 px-3 py-1 bg-black/40 border-b border-[#a04000]/30">
-        <span className="font-pixel text-[7px] text-[#80d8ff]">GOAL</span>
-        <p className="text-[9px] md:text-[10px] text-white/70 truncate max-w-[250px] md:max-w-[400px]">{goal}</p>
+      {/* Goal bar + music toggle */}
+      <div className="flex items-center justify-between px-3 py-1 bg-black/40 border-b border-[#a04000]/30">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="font-pixel text-[7px] text-[#80d8ff] shrink-0">GOAL</span>
+          <p className="text-[9px] md:text-[10px] text-white/70 truncate max-w-[250px] md:max-w-[400px]">{goal}</p>
+        </div>
+        <button
+          onClick={onToggleMusic}
+          className={`shrink-0 ml-2 w-6 h-6 flex items-center justify-center rounded transition-colors ${
+            musicPlaying
+              ? 'text-amber-400 hover:text-amber-300'
+              : 'text-sky-700 hover:text-sky-500'
+          }`}
+          title={musicPlaying ? 'Mute music' : 'Play music'}
+        >
+          {musicPlaying ? <MusicNote size={14} weight="fill" /> : <MusicNoteSimple size={14} weight="regular" />}
+        </button>
       </div>
 
       {/* Fitbit connected indicator (full insights panel is rendered separately) */}
@@ -123,7 +141,7 @@ export default function GameHUD({
           onClick={onConnectClick}
           className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-sky-950/40 border-b border-sky-700/20 hover:bg-teal-900/30 transition-colors cursor-pointer"
         >
-          <span className="text-sm">⌚</span>
+          <Watch size={16} weight="fill" className="text-sky-400" />
           <span className="font-pixel text-[10px] text-sky-500 hover:text-teal-400 transition-colors">
             CONNECT FITBIT
           </span>
