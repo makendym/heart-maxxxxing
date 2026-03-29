@@ -11,12 +11,14 @@ export async function POST(req: Request) {
     playerName,
     goal,
     language,
+    isCompletion,
   }: {
     trends: HealthTrends
     session: number
     playerName: string
     goal: string
     language?: string
+    isCompletion?: boolean
   } = await req.json()
 
   const dataLines: string[] = []
@@ -80,9 +82,25 @@ export async function POST(req: Request) {
     ? `IMPORTANT: Write the entire report in ${language}. Use culturally natural expressions, not stiff translations.`
     : ''
 
-  const { text } = await generateText({
-    model: google('gemini-2.5-flash-preview-05-20'),
-    system: `You are a cardiac rehab health analyst. You write personalized weekly health reports based on real Fitbit data.
+  const systemPrompt = isCompletion
+    ? `You are a cardiac rehab health analyst writing a final program summary for a patient who just completed all 36 sessions.
+
+RULES:
+- Write in 4 sections with headers: HEART, ACTIVITY, RECOVERY, WHAT'S NEXT
+- HEART: What changed in their cardiovascular system. Use real numbers from the data. Interpret what the resting HR and HRV changes mean for their daily life.
+- ACTIVITY: How their movement changed. Total steps, distance, active minutes — make it tangible ("that's like walking from X to Y").
+- RECOVERY: Sleep quality, HRV trends, how their body handles stress now vs 12 weeks ago.
+- WHAT'S NEXT: This is the most important section. 3-4 specific, personalized recommendations for maintaining gains AFTER rehab. Base these on their actual data:
+  * If their steps are high, suggest a target to maintain
+  * If their HR improved, explain how to monitor it going forward
+  * If their sleep needs work, give a specific tip
+  * Suggest when to check in with their cardiologist
+  * Recommend a realistic weekly exercise goal based on what they actually achieved
+- Each section: 2-3 sentences. Be warm but specific. This is a graduation, not a pamphlet.
+- Reference their personal goal and how the data shows they moved toward it.
+- No bullet points. No medical jargon. Write like someone who watched them do all 36 sessions.
+${langInstruction}`
+    : `You are a cardiac rehab health analyst. You write personalized weekly health reports based on real Fitbit data.
 
 RULES:
 - Write in 4 short sections with headers: HEART, ACTIVITY, RECOVERY, OUTLOOK
@@ -95,15 +113,19 @@ RULES:
 - If something is concerning (HR up, HRV down, sleep poor), say it directly but with next-step advice.
 - End OUTLOOK with one specific, actionable thing they can do this week.
 - No medical jargon. No bullet points. Write like a knowledgeable friend.
-${langInstruction}`,
+${langInstruction}`
+
+  const { text } = await generateText({
+    model: google('gemini-2.5-flash-preview-05-20'),
+    system: systemPrompt,
     prompt: `Patient: ${playerName}
 Goal: "${goal}"
-Session: ${session}/36 (${progress}%)
+Session: ${session}/36 (${progress}%)${isCompletion ? ' — PROGRAM COMPLETE' : ''}
 
 FITBIT DATA:
 ${dataLines.join('\n')}`,
     temperature: 0.7,
-    maxOutputTokens: 600,
+    maxOutputTokens: isCompletion ? 800 : 600,
   })
 
   return Response.json({ report: text })

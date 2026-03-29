@@ -492,6 +492,7 @@ export default function GameShell() {
           hearts={hearts}
           goal={state.goal}
           healthTrends={healthTrends}
+          language={state.profile?.language}
           onClose={() => setShowCompletion(false)}
         />
       )}
