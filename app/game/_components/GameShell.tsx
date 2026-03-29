@@ -213,6 +213,7 @@ export default function GameShell() {
       restingHeartRate: gameState.profile.restingHeartRate,
       pastDiseases: gameState.profile.pastDiseases,
       rehabPhase: getCurrentAct(session, gameState.profile.rehabPlan)?.title,
+      ethnicity: gameState.profile.ethnicity,
     }
   }, [])
 

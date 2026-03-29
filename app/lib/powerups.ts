@@ -50,29 +50,29 @@ function getRotationEntry(brickIndex: number): { type: PowerupType; title: strin
 /** Static fallback content — used when LLM is unavailable */
 const FALLBACK_CONTENT: Record<PowerupType, string[]> = {
   'goal-progress': [
-    "You're making real progress toward your goal: {goal}. Every session brings you closer.",
-    "Halfway momentum! Your goal of {goal} is becoming more achievable with every step.",
+    "You're making real progress toward {goal}. Your body knows the difference even if your mind hasn't caught up yet.",
+    "Halfway there. {goal} used to feel impossible — now it's just a matter of time.",
     "The finish line for {goal} is getting clearer. You've built something real.",
   ],
   'health-tip': [
-    'Walking 30 minutes a day reduces hospital readmission by 30%. Every step counts!',
-    'Each session strengthens the blood vessels around your stent. You\'re literally building a stronger heart.',
-    'You\'ve built exercise habits that last a lifetime. Patients who finish rehab stay active for years after.',
+    'Your blood pressure drops for 22 hours after each session. Your arteries are thanking you right now.',
+    'Each session strengthens the blood vessels around your heart. You are literally building backup routes.',
+    'Exercise after cardiac events reduces readmission by 30%. You are stacking the odds in your favor.',
   ],
   'loved-one': [
-    "We're so proud of you! Keep going — we're cheering you on every step of the way. 💕",
-    'You inspire me every single day. I told my friends about your journey and they think you\'re amazing too. ❤️',
+    "I screenshot your Mario every time it moves. So proud of you. — Ana",
+    "Told my friends about your rehab journey. You're famous now. Keep going! — David",
   ],
   'achievement': [
-    'You\'re in the top 25% of rehab patients. That takes real dedication.',
-    'Unstoppable! You\'re in the top 10% of all cardiac rehab patients.',
+    'IRON WILL — You are in the top 25% of rehab patients. That takes showing up when you did not feel like it.',
+    'UNSTOPPABLE — Top 10% of all cardiac rehab patients. Your consistency is rare.',
   ],
   'heart-fact': [
-    'Your resting heart rate has likely started to improve. Cardiac rehab patients see a 7-10 BPM drop on average!',
-    'Your heart is pumping more efficiently now. Studies show cardiac output improves 15-20% through rehab.',
+    'Your resting heart rate has likely dropped 5-10 BPM since session 1. That is your heart getting more efficient with every beat.',
+    'Your heart is pumping more blood per beat now. Cardiac output improves 15-20% through rehab — yours included.',
   ],
   'celebration': [
-    'All 36 sessions complete! You\'ve reduced your risk of rehospitalization by 43%. Your heart — and everyone who loves you — thanks you.',
+    'All 36 sessions. You reduced your risk of rehospitalization by 43%. The person who started session 1 would not recognize who you are now.',
   ],
 }
 
