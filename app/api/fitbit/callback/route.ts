@@ -9,14 +9,14 @@ export async function GET(request: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
   if (error || !code) {
-    return NextResponse.redirect(`${baseUrl}/game?gfit_error=denied`)
+    return NextResponse.redirect(`${baseUrl}/game?fitbit_error=denied`)
   }
 
   try {
     const tokens = await exchangeCode(code)
     const response = NextResponse.redirect(`${baseUrl}/game`)
 
-    response.cookies.set('gfit_tokens', JSON.stringify(tokens), {
+    response.cookies.set('fitbit_tokens', JSON.stringify(tokens), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       path: '/',
     })
 
-    response.cookies.set('gfit_connected', 'true', {
+    response.cookies.set('fitbit_connected', 'true', {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -34,6 +34,6 @@ export async function GET(request: Request) {
 
     return response
   } catch {
-    return NextResponse.redirect(`${baseUrl}/game?gfit_error=token_failed`)
+    return NextResponse.redirect(`${baseUrl}/game?fitbit_error=token_failed`)
   }
 }

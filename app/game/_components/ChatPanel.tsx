@@ -14,13 +14,27 @@ interface ChatPanelProps {
   healthTrends?: HealthTrends | null
 }
 
+/** Map BCP-47 language code to speech synthesis / recognition locale */
+function getSpeechLang(code: string): string {
+  const map: Record<string, string> = {
+    en: 'en-US', hi: 'hi-IN', es: 'es-ES', zh: 'zh-CN', ar: 'ar-SA',
+    pt: 'pt-BR', fr: 'fr-FR', de: 'de-DE', ja: 'ja-JP', ko: 'ko-KR',
+    ta: 'ta-IN', te: 'te-IN', bn: 'bn-IN', ur: 'ur-PK',
+  }
+  return map[code] || 'en-US'
+}
+
 export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [isListening, setIsListening] = useState(false)
+  const [autoSpeak, setAutoSpeak] = useState(true)
+  const [speakingId, setSpeakingId] = useState<string | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastSpokenRef = useRef<string | null>(null)
   const quickReplies = useMemo(() => getQuickReplies(state), [state])
+  const speechLang = getSpeechLang(state.profile.language || 'en')
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -42,13 +56,59 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
     inputRef.current?.focus()
   }, [])
 
-  // Cleanup speech recognition on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort()
+      window.speechSynthesis?.cancel()
     }
   }, [])
 
+  // Auto-speak new assistant messages when streaming completes
+  useEffect(() => {
+    if (!autoSpeak || status === 'streaming') return
+    const lastMsg = messages[messages.length - 1]
+    if (!lastMsg || lastMsg.role !== 'assistant') return
+    if (lastSpokenRef.current === lastMsg.id) return
+
+    const text = lastMsg.parts
+      .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+      .map((p) => p.text)
+      .join('')
+
+    if (text.trim()) {
+      lastSpokenRef.current = lastMsg.id
+      speak(text, lastMsg.id)
+    }
+  }, [messages, status, autoSpeak])
+
+  /** Speak text using Web Speech API */
+  const speak = useCallback((text: string, msgId?: string) => {
+    const synth = window.speechSynthesis
+    if (!synth) return
+
+    synth.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = speechLang
+    utterance.rate = 1.0
+    utterance.pitch = 1.0
+
+    if (msgId) {
+      setSpeakingId(msgId)
+      utterance.onend = () => setSpeakingId(null)
+      utterance.onerror = () => setSpeakingId(null)
+    }
+
+    synth.speak(utterance)
+  }, [speechLang])
+
+  /** Stop speaking */
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis?.cancel()
+    setSpeakingId(null)
+  }, [])
+
+  /** Toggle voice input */
   const toggleVoice = useCallback(() => {
     if (isListening) {
       recognitionRef.current?.stop()
@@ -60,7 +120,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
     if (!SpeechRecognition) return
 
     const recognition = new SpeechRecognition()
-    recognition.lang = 'en-US'
+    recognition.lang = speechLang
     recognition.interimResults = true
     recognition.continuous = false
     recognitionRef.current = recognition
@@ -72,7 +132,6 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
       }
       setInput(transcript)
 
-      // Auto-send on final result
       if (event.results[event.results.length - 1].isFinal) {
         const text = transcript.trim()
         if (text && status === 'ready') {
@@ -88,7 +147,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
 
     recognition.start()
     setIsListening(true)
-  }, [isListening, status, sendMessage])
+  }, [isListening, status, sendMessage, speechLang])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -105,6 +164,7 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
   const hasMessages = messages.length > 0
   const showQuickReplies = status === 'ready'
   const hasSpeech = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  const hasTTS = typeof window !== 'undefined' && 'speechSynthesis' in window
 
   return (
     <div className="fixed top-0 right-0 z-40 w-full h-full md:w-96 md:h-[70vh] md:mt-2 md:mr-2">
@@ -118,12 +178,34 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
               <p className="text-[10px] text-sky-400">Your rehab companion</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center text-sky-400 hover:text-white hover:bg-sky-800 rounded-lg transition-colors"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Auto-speak toggle */}
+            {hasTTS && (
+              <button
+                onClick={() => {
+                  setAutoSpeak(!autoSpeak)
+                  if (autoSpeak) stopSpeaking()
+                }}
+                className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
+                  autoSpeak
+                    ? 'text-emerald-400 bg-emerald-900/30'
+                    : 'text-sky-600 hover:text-sky-400'
+                }`}
+                title={autoSpeak ? 'Auto-speak on' : 'Auto-speak off'}
+              >
+                {autoSpeak ? '🔊' : '🔇'}
+              </button>
+            )}
+            <button
+              onClick={() => {
+                stopSpeaking()
+                onClose()
+              }}
+              className="w-8 h-8 flex items-center justify-center text-sky-400 hover:text-white hover:bg-sky-800 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -132,31 +214,59 @@ export default function ChatPanel({ state, onClose, healthTrends }: ChatPanelPro
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-4">
               <LuigiIcon size={48} />
               <p className="font-pixel text-[9px] text-emerald-400">Coach Heartley</p>
-              <p className="text-sm text-sky-300/70">Ask me anything about your rehab journey, or just say hi.</p>
+              <p className="text-sm text-sky-300/70">
+                Ask me anything — recipes, nutrition, how you're feeling, or just say hi.
+              </p>
             </div>
           )}
 
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          {messages.map((message) => {
+            const msgText = message.parts
+              .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+              .map((p) => p.text)
+              .join('')
+
+            return (
               <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                  message.role === 'user'
-                    ? 'bg-pink-600/80 text-white rounded-br-sm'
-                    : 'bg-sky-800/80 text-sky-100 rounded-bl-sm'
-                }`}
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {message.role === 'assistant' && (
-                  <LuigiIcon size={14} />
-                )}
-                {message.parts.map((part, index) =>
-                  part.type === 'text' ? <span key={index}>{part.text}</span> : null,
-                )}
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                    message.role === 'user'
+                      ? 'bg-pink-600/80 text-white rounded-br-sm'
+                      : 'bg-sky-800/80 text-sky-100 rounded-bl-sm'
+                  }`}
+                >
+                  {message.role === 'assistant' && (
+                    <span className="inline-flex items-center gap-1 mb-0.5">
+                      <LuigiIcon size={14} />
+                      {hasTTS && (
+                        <button
+                          onClick={() =>
+                            speakingId === message.id ? stopSpeaking() : speak(msgText, message.id)
+                          }
+                          className={`text-[10px] px-1 rounded transition-colors ${
+                            speakingId === message.id
+                              ? 'text-emerald-400 animate-pulse'
+                              : 'text-sky-500 hover:text-sky-300'
+                          }`}
+                          title={speakingId === message.id ? 'Stop' : 'Listen'}
+                        >
+                          {speakingId === message.id ? '⏹' : '▶'}
+                        </button>
+                      )}
+                    </span>
+                  )}
+                  {message.parts.map((part, index) =>
+                    part.type === 'text' ? (
+                      <span key={index} className="whitespace-pre-wrap">{part.text}</span>
+                    ) : null,
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {status === 'streaming' && messages[messages.length - 1]?.role !== 'assistant' && (
             <div className="flex justify-start">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { loadState, saveState, DEFAULT_STATE, DEFAULT_PROFILE, type PatientProfile } from './lib/game-state'
+import { loadState, saveState, DEFAULT_STATE, DEFAULT_PROFILE, LANGUAGE_OPTIONS, ETHNICITY_OPTIONS, type PatientProfile } from './lib/game-state'
 
 const FLOATING_HEARTS = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -38,6 +38,8 @@ export default function WelcomePage() {
   const [bp, setBp] = useState(DEFAULT_PROFILE.bloodPressure)
   const [rhr, setRhr] = useState(DEFAULT_PROFILE.restingHeartRate)
   const [diseases, setDiseases] = useState<string[]>(DEFAULT_PROFILE.pastDiseases)
+  const [ethnicity, setEthnicity] = useState(DEFAULT_PROFILE.ethnicity)
+  const [language, setLanguage] = useState(DEFAULT_PROFILE.language)
 
   useEffect(() => {
     setMounted(true)
@@ -59,6 +61,8 @@ export default function WelcomePage() {
       bloodPressure: bp,
       restingHeartRate: rhr,
       pastDiseases: diseases,
+      ethnicity,
+      language,
       rehabPlan: DEFAULT_PROFILE.rehabPlan,
     }
   }
@@ -227,6 +231,33 @@ export default function WelcomePage() {
                       onChange={(e) => setHeight(Number(e.target.value))}
                       className="w-full px-2 py-2 bg-sky-900/60 border border-sky-600/40 rounded-lg text-white text-sm focus:outline-none focus:border-pink-400/60"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block mb-1 font-pixel text-[8px] text-sky-400">Background</label>
+                    <select
+                      value={ethnicity}
+                      onChange={(e) => setEthnicity(e.target.value)}
+                      className="w-full px-2 py-2 bg-sky-900/60 border border-sky-600/40 rounded-lg text-white text-sm focus:outline-none focus:border-pink-400/60"
+                    >
+                      {ETHNICITY_OPTIONS.map((e) => (
+                        <option key={e} value={e}>{e}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-pixel text-[8px] text-sky-400">Language</label>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full px-2 py-2 bg-sky-900/60 border border-sky-600/40 rounded-lg text-white text-sm focus:outline-none focus:border-pink-400/60"
+                    >
+                      {LANGUAGE_OPTIONS.map((l) => (
+                        <option key={l.code} value={l.code}>{l.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

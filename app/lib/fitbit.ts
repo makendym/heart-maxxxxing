@@ -1,22 +1,15 @@
-// Google Fit REST API — tracks health trends across the rehab program
+// Fitbit Web API — tracks health trends across the rehab program
 
-const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-const GOOGLE_FIT_BASE = 'https://www.googleapis.com/fitness/v1/users/me'
-const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
+const FITBIT_AUTH_URL = 'https://www.fitbit.com/oauth2/authorize'
+const FITBIT_TOKEN_URL = 'https://api.fitbit.com/oauth2/token'
+const FITBIT_API = 'https://api.fitbit.com'
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/fitness.activity.read',
-  'https://www.googleapis.com/auth/fitness.heart_rate.read',
-  'https://www.googleapis.com/auth/fitness.sleep.read',
-  'https://www.googleapis.com/auth/userinfo.profile',
-].join(' ')
-
-export interface GoogleTokens {
+export interface FitbitTokens {
   access_token: string
   refresh_token?: string
   expires_in: number
   token_type: string
+  user_id?: string
 }
 
 export interface HealthTrends {
@@ -33,14 +26,13 @@ export interface HealthTrends {
     avgActiveMinutes?: number
   }
   deltas: {
-    restingHR?: number // negative = improvement
-    dailySteps?: number // positive = improvement
-    activeMinutes?: number // positive = improvement
+    restingHR?: number
+    dailySteps?: number
+    activeMinutes?: number
   }
   totals: {
     totalSteps?: number
     totalActiveMinutes?: number
-    totalDistance?: number // meters
     programDays?: number
   }
   profile?: { name: string; picture: string }
@@ -48,120 +40,84 @@ export interface HealthTrends {
 
 // ── OAuth ──
 
-export function getAuthUrl(): string {
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  if (!clientId) throw new Error('GOOGLE_CLIENT_ID not set')
-
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/fitbit/callback`,
-    response_type: 'code',
-    scope: SCOPES,
-    access_type: 'offline',
-    prompt: 'consent',
-  })
-
-  return `${GOOGLE_AUTH_URL}?${params.toString()}`
+function basicAuth(): string {
+  return Buffer.from(
+    `${process.env.FITBIT_CLIENT_ID}:${process.env.FITBIT_CLIENT_SECRET}`,
+  ).toString('base64')
 }
 
-export async function exchangeCode(code: string): Promise<GoogleTokens> {
-  const res = await fetch(GOOGLE_TOKEN_URL, {
+export function getAuthUrl(): string {
+  const clientId = process.env.FITBIT_CLIENT_ID
+  if (!clientId) throw new Error('FITBIT_CLIENT_ID not set')
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/fitbit/callback`,
+    scope: 'activity heartrate sleep profile',
+    expires_in: '604800',
+  })
+
+  return `${FITBIT_AUTH_URL}?${params.toString()}`
+}
+
+export async function exchangeCode(code: string): Promise<FitbitTokens> {
+  const res = await fetch(FITBIT_TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      Authorization: `Basic ${basicAuth()}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/fitbit/callback`,
       grant_type: 'authorization_code',
+      redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/fitbit/callback`,
     }),
   })
   if (!res.ok) throw new Error(`Token exchange failed: ${await res.text()}`)
   return res.json()
 }
 
-export async function refreshAccessToken(token: string): Promise<GoogleTokens> {
-  const res = await fetch(GOOGLE_TOKEN_URL, {
+export async function refreshAccessToken(token: string): Promise<FitbitTokens> {
+  const res = await fetch(FITBIT_TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      Authorization: `Basic ${basicAuth()}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
     body: new URLSearchParams({
-      refresh_token: token,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
       grant_type: 'refresh_token',
+      refresh_token: token,
     }),
   })
   if (!res.ok) throw new Error('Token refresh failed')
   return res.json()
 }
 
-// ── Google Fit API ──
+// ── Fitbit API helpers ──
 
-const DAY_MS = 86_400_000
-
-async function aggregate(
-  accessToken: string,
-  dataTypeName: string,
-  startMs: number,
-  endMs: number,
-  bucketMs: number,
-) {
-  const res = await fetch(`${GOOGLE_FIT_BASE}/dataset:aggregate`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      aggregateBy: [{ dataTypeName }],
-      bucketByTime: { durationMillis: bucketMs },
-      startTimeMillis: startMs,
-      endTimeMillis: endMs,
-    }),
+async function fitbitGet(path: string, accessToken: string) {
+  const res = await fetch(`${FITBIT_API}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
     const errText = await res.text().catch(() => '')
-    console.error(`[GFit] ${dataTypeName} error ${res.status}:`, errText)
-    throw new Error(`Google Fit error: ${res.status}`)
+    console.error(`[Fitbit] ${path} error ${res.status}:`, errText.slice(0, 200))
+    throw new Error(`Fitbit API error: ${res.status}`)
   }
-  const json = await res.json()
-  // Log raw response for debugging
-  const bucketCount = json.bucket?.length || 0
-  const pointCount = json.bucket?.reduce((sum: number, b: { dataset: Array<{ point: unknown[] }> }) =>
-    sum + (b.dataset?.[0]?.point?.length || 0), 0) || 0
-  console.log(`[GFit] ${dataTypeName}: ${bucketCount} buckets, ${pointCount} points`)
-  if (pointCount > 0 && json.bucket?.[0]?.dataset?.[0]?.point?.[0]) {
-    console.log(`[GFit] ${dataTypeName} sample point:`, JSON.stringify(json.bucket[0].dataset[0].point[0]))
-  }
-  return json
+  return res.json()
 }
 
-/** Extract daily int totals from aggregate buckets */
-function dailyInts(buckets: Array<{ dataset: Array<{ point: Array<{ value: Array<{ intVal?: number }> }> }> }>): number[] {
-  return buckets.map((b) => {
-    let sum = 0
-    for (const p of b.dataset?.[0]?.point || []) sum += p.value?.[0]?.intVal || 0
-    return sum
-  })
+function toDateStr(d: Date | string | number): string {
+  return new Date(d).toISOString().split('T')[0]
 }
 
-/** Extract daily float totals */
-function dailyFloats(buckets: Array<{ dataset: Array<{ point: Array<{ value: Array<{ fpVal?: number }> }> }> }>): number[] {
-  return buckets.map((b) => {
-    let sum = 0
-    for (const p of b.dataset?.[0]?.point || []) sum += p.value?.[0]?.fpVal || 0
-    return sum
-  })
-}
-
-/** Average of first N non-zero values (baseline period) */
 function avgFirst(values: number[], n: number): number | undefined {
   const valid = values.slice(0, n).filter((v) => v > 0)
   if (valid.length === 0) return undefined
   return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length)
 }
 
-/** Average of last N non-zero values (current period) */
 function avgLast(values: number[], n: number): number | undefined {
   const valid = values.slice(-n).filter((v) => v > 0)
   if (valid.length === 0) return undefined
@@ -175,29 +131,28 @@ export async function fetchHealthTrends(
   programStartDate?: string,
   programEndDate?: string,
 ): Promise<HealthTrends> {
-  const now = Date.now()
+  const startDate = programStartDate
+    ? toDateStr(programStartDate)
+    : '2025-11-01'
+  const endDate = programEndDate
+    ? toDateStr(programEndDate)
+    : toDateStr(new Date())
 
-  const programStart = programStartDate
-    ? new Date(programStartDate).getTime()
-    : new Date('2025-11-01').getTime()
-  const dataStart = programStart
-  const dataEnd = programEndDate
-    ? new Date(programEndDate).getTime()
-    : now
-  const programDays = Math.max(1, Math.floor((dataEnd - programStart) / DAY_MS))
+  const startMs = new Date(startDate).getTime()
+  const endMs = new Date(endDate).getTime()
+  const DAY_MS = 86_400_000
+  const programDays = Math.max(1, Math.floor((endMs - startMs) / DAY_MS))
 
-  console.log(`[GFit] Fetching data from ${new Date(dataStart).toISOString()} to ${new Date(dataEnd).toISOString()} (program day ${programDays})`)
+  console.log(`[Fitbit] Fetching ${startDate} to ${endDate} (program day ${programDays})`)
 
-  const [stepsRes, hrRes, activeMinsRes, distRes, sleepRes, profileRes] =
+  const [stepsRes, hrRes, fairlyActiveRes, veryActiveRes, sleepRes, profileRes] =
     await Promise.allSettled([
-      aggregate(accessToken, 'com.google.step_count.delta', dataStart, dataEnd, DAY_MS),
-      aggregate(accessToken, 'com.google.heart_rate.bpm', dataStart, dataEnd, DAY_MS),
-      aggregate(accessToken, 'com.google.active_minutes', dataStart, dataEnd, DAY_MS),
-      aggregate(accessToken, 'com.google.distance.delta', dataStart, dataEnd, DAY_MS),
-      aggregate(accessToken, 'com.google.sleep.segment', dataEnd - DAY_MS, dataEnd, DAY_MS * 2),
-      fetch(GOOGLE_USERINFO_URL, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }).then((r) => (r.ok ? r.json() : null)),
+      fitbitGet(`/1/user/-/activities/steps/date/${startDate}/${endDate}.json`, accessToken),
+      fitbitGet(`/1/user/-/activities/heart/date/${startDate}/${endDate}.json`, accessToken),
+      fitbitGet(`/1/user/-/activities/minutesFairlyActive/date/${startDate}/${endDate}.json`, accessToken),
+      fitbitGet(`/1/user/-/activities/minutesVeryActive/date/${startDate}/${endDate}.json`, accessToken),
+      fitbitGet(`/1.2/user/-/sleep/date/${endDate}/${endDate}.json`, accessToken),
+      fitbitGet('/1/user/-/profile.json', accessToken),
     ])
 
   // ── Steps ──
@@ -207,9 +162,11 @@ export async function fetchHealthTrends(
   let totalSteps: number | undefined
 
   if (stepsRes.status === 'fulfilled') {
-    const days = dailyInts(stepsRes.value.bucket || [])
+    const entries = stepsRes.value['activities-steps'] || []
+    const days = entries.map((e: { value: string }) => parseInt(e.value) || 0)
+    console.log(`[Fitbit] Steps: ${days.length} days, sample: ${days.slice(0, 3).join(', ')}`)
     stepsToday = days[days.length - 1] || 0
-    totalSteps = days.reduce((a, b) => a + b, 0)
+    totalSteps = days.reduce((a: number, b: number) => a + b, 0)
     avgDailyStepsBaseline = avgFirst(days, 7)
     avgDailyStepsCurrent = avgLast(days, 7)
   }
@@ -219,76 +176,62 @@ export async function fetchHealthTrends(
   let baselineRestingHR: number | undefined
 
   if (hrRes.status === 'fulfilled') {
-    const buckets = hrRes.value.bucket || []
-    // For each day, min HR ≈ resting HR (value[2] = min in aggregated HR)
-    const dailyMinHR = buckets
-      .map((b: { dataset: Array<{ point: Array<{ value: Array<{ fpVal?: number }> }> }> }) => {
-        const points = b.dataset?.[0]?.point || []
-        if (points.length === 0) return 0
-        return Math.round(points[0].value?.[2]?.fpVal || points[0].value?.[0]?.fpVal || 0)
-      })
+    const entries = hrRes.value['activities-heart'] || []
+    const dailyRHR = entries
+      .map((e: { value: { restingHeartRate?: number } }) => e.value?.restingHeartRate || 0)
       .filter((v: number) => v > 0)
-
-    baselineRestingHR = avgFirst(dailyMinHR, 7)
-    currentRestingHR = avgLast(dailyMinHR, 7)
+    console.log(`[Fitbit] Resting HR: ${dailyRHR.length} days with data, sample: ${dailyRHR.slice(0, 3).join(', ')}`)
+    baselineRestingHR = avgFirst(dailyRHR, 7)
+    currentRestingHR = avgLast(dailyRHR, 7)
   }
 
-  // ── Active Minutes ──
+  // ── Active Minutes (fairly + very) ──
   let activeMinutesToday: number | undefined
   let avgActiveBaseline: number | undefined
   let avgActiveCurrent: number | undefined
   let totalActiveMinutes: number | undefined
 
-  if (activeMinsRes.status === 'fulfilled') {
-    const days = dailyInts(activeMinsRes.value.bucket || [])
+  if (fairlyActiveRes.status === 'fulfilled' && veryActiveRes.status === 'fulfilled') {
+    const fairly = (fairlyActiveRes.value['activities-minutesFairlyActive'] || [])
+      .map((e: { value: string }) => parseInt(e.value) || 0)
+    const very = (veryActiveRes.value['activities-minutesVeryActive'] || [])
+      .map((e: { value: string }) => parseInt(e.value) || 0)
+    const days = fairly.map((f: number, i: number) => f + (very[i] || 0))
+    console.log(`[Fitbit] Active mins: ${days.length} days, sample: ${days.slice(0, 3).join(', ')}`)
     activeMinutesToday = days[days.length - 1] || 0
-    totalActiveMinutes = days.reduce((a, b) => a + b, 0)
+    totalActiveMinutes = days.reduce((a: number, b: number) => a + b, 0)
     avgActiveBaseline = avgFirst(days, 7)
     avgActiveCurrent = avgLast(days, 7)
   }
 
-  // ── Distance ──
-  let totalDistance: number | undefined
-  if (distRes.status === 'fulfilled') {
-    const days = dailyFloats(distRes.value.bucket || [])
-    totalDistance = Math.round(days.reduce((a, b) => a + b, 0))
-  }
-
-  // ── Sleep (today only) ──
+  // ── Sleep ──
   let sleepMinutes: number | undefined
   if (sleepRes.status === 'fulfilled') {
-    const points = sleepRes.value.bucket?.[0]?.dataset?.[0]?.point || []
-    let totalNanos = 0
-    for (const p of points) {
-      const stage = p.value?.[0]?.intVal
-      if (stage && stage !== 3) {
-        // exclude "out of bed" (3)
-        totalNanos += parseInt(p.endTimeNanos) - parseInt(p.startTimeNanos)
-      }
-    }
-    if (totalNanos > 0) sleepMinutes = Math.round(totalNanos / 1e9 / 60)
+    sleepMinutes = sleepRes.value?.summary?.totalMinutesAsleep
+    console.log(`[Fitbit] Sleep: ${sleepMinutes ?? 'no data'} min`)
   }
 
   // ── Profile ──
   let profile: { name: string; picture: string } | undefined
-  if (profileRes.status === 'fulfilled' && profileRes.value) {
-    profile = {
-      name: profileRes.value.name || '',
-      picture: profileRes.value.picture || '',
+  if (profileRes.status === 'fulfilled') {
+    const user = profileRes.value?.user
+    if (user) {
+      profile = {
+        name: user.displayName || '',
+        picture: user.avatar || '',
+      }
     }
   }
 
-  // ── Compute deltas ──
+  // ── Deltas ──
   const deltaHR =
     currentRestingHR != null && baselineRestingHR != null
       ? currentRestingHR - baselineRestingHR
       : undefined
-
   const deltaSteps =
     avgDailyStepsCurrent != null && avgDailyStepsBaseline != null
       ? avgDailyStepsCurrent - avgDailyStepsBaseline
       : undefined
-
   const deltaActive =
     avgActiveCurrent != null && avgActiveBaseline != null
       ? avgActiveCurrent - avgActiveBaseline
@@ -315,7 +258,6 @@ export async function fetchHealthTrends(
     totals: {
       totalSteps,
       totalActiveMinutes,
-      totalDistance,
       programDays,
     },
     profile,

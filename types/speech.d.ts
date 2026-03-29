@@ -1,3 +1,5 @@
+// Web Speech API — Recognition
+
 interface SpeechRecognition extends EventTarget {
   lang: string
   continuous: boolean
@@ -34,7 +36,28 @@ declare var SpeechRecognition: {
   new (): SpeechRecognition
 }
 
+// Web Speech API — Synthesis
+
+interface SpeechSynthesisUtterance extends EventTarget {
+  text: string
+  lang: string
+  rate: number
+  pitch: number
+  volume: number
+  onend: (() => void) | null
+  onerror: (() => void) | null
+}
+
+declare var SpeechSynthesisUtterance: {
+  new (text?: string): SpeechSynthesisUtterance
+}
+
 interface Window {
   SpeechRecognition: typeof SpeechRecognition
   webkitSpeechRecognition: typeof SpeechRecognition
+  speechSynthesis: {
+    speak(utterance: SpeechSynthesisUtterance): void
+    cancel(): void
+    speaking: boolean
+  }
 }

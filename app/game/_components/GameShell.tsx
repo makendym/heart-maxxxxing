@@ -35,7 +35,7 @@ export default function GameShell() {
   const [bumpingBrick, setBumpingBrick] = useState<number | null>(null)
   const [poppingBrick, setPoppingBrick] = useState<number | null>(null)
   const [grabbingPowerup, setGrabbingPowerup] = useState(false)
-  const [isHopping, setIsHopping] = useState(false)
+  const [isHopping] = useState(false)
   const [gfitConnected, setGfitConnected] = useState(false)
   const [healthTrends, setHealthTrends] = useState<HealthTrends | null>(null)
   const [showConnectModal, setShowConnectModal] = useState(false)
@@ -53,9 +53,9 @@ export default function GameShell() {
     }
   }, [router])
 
-  // Check Google Fit connection (runs once on mount)
+  // Check Fitbit connection (runs once on mount)
   useEffect(() => {
-    setGfitConnected(document.cookie.includes('gfit_connected=true'))
+    setGfitConnected(document.cookie.includes('fitbit_connected=true'))
   }, [])
 
   // Fetch health trends once state is loaded and connected
@@ -100,13 +100,8 @@ export default function GameShell() {
 
     const nextSession = state.currentSession + 1
 
-    // Check if walk crosses a pipe — Mario hops over it
-    const PIPE_POSITIONS = [5, 14, 23, 32]
-    const crossesPipe = PIPE_POSITIONS.includes(nextSession) || PIPE_POSITIONS.includes(state.currentSession)
-
     // 1. Start walking animation + immediately move position (CSS transition handles slide)
     setIsWalking(true)
-    if (crossesPipe) setIsHopping(true)
     const newState: GameState = {
       ...state,
       currentSession: nextSession,
@@ -119,7 +114,6 @@ export default function GameShell() {
     // 2. After Mario arrives (match CSS transition duration), stop walking
     setTimeout(() => {
       setIsWalking(false)
-      setIsHopping(false)
 
       // Heart pulse on even sessions
       if (nextSession % 2 === 0) {
@@ -164,7 +158,7 @@ export default function GameShell() {
               totalSteps: healthTrends.totals.totalSteps,
               activeMinutes: healthTrends.current.activeMinutes,
               deltaActiveMinutes: healthTrends.deltas.activeMinutes,
-              totalDistance: healthTrends.totals.totalDistance,
+              totalDistance: (healthTrends.totals as Record<string, unknown>).totalDistance as number | undefined,
               programDays: healthTrends.totals.programDays,
             }
           : undefined

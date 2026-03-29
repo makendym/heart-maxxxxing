@@ -110,11 +110,11 @@ export default function CompletionScreen({
                       </div>
                     </div>
                   )}
-                  {healthTrends.totals.totalDistance != null && (
+                  {'totalDistance' in healthTrends.totals && healthTrends.totals.totalDistance != null && (
                     <div>
                       <span className="text-gray-400 text-xs">Distance</span>
                       <div className="text-emerald-400 font-pixel text-xs">
-                        {(healthTrends.totals.totalDistance / 1000).toFixed(1)} km
+                        {((healthTrends.totals as { totalDistance: number }).totalDistance / 1000).toFixed(1)} km
                       </div>
                     </div>
                   )}

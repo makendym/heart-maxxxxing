@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     system,
     messages: await convertToModelMessages(messages),
     temperature: 0.85,
-    maxOutputTokens: 300,
+    maxOutputTokens: 800,
   })
 
   return result.toUIMessageStreamResponse()

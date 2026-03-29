@@ -114,7 +114,7 @@ export default function GameHUD({
         <div className="flex items-center justify-center gap-4 px-3 py-1.5 bg-teal-900/40 border-b border-teal-700/30">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
-            <span className="font-pixel text-[7px] text-teal-400">GOOGLE FIT</span>
+            <span className="font-pixel text-[7px] text-teal-400">FITBIT</span>
           </span>
 
           {!healthTrends && (
@@ -151,7 +151,7 @@ export default function GameHUD({
         >
           <span className="text-sm">⌚</span>
           <span className="font-pixel text-[10px] text-sky-500 hover:text-teal-400 transition-colors">
-            CONNECT GOOGLE FIT
+            CONNECT FITBIT
           </span>
         </button>
       )}

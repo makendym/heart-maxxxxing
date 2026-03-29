@@ -20,6 +20,8 @@ export interface PatientProfile {
   restingHeartRate: number
   pastDiseases: string[]
   rehabPlan: RehabPlan
+  ethnicity: string
+  language: string // BCP-47 code e.g. 'en', 'hi', 'es'
 }
 
 export interface GameState {
@@ -35,6 +37,39 @@ export interface GameState {
 
 const STORAGE_KEY = 'heart-maxxxxing-state'
 
+export const LANGUAGE_OPTIONS = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिन्दी (Hindi)' },
+  { code: 'es', label: 'Español' },
+  { code: 'zh', label: '中文 (Chinese)' },
+  { code: 'ar', label: 'العربية (Arabic)' },
+  { code: 'pt', label: 'Português' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'ja', label: '日本語 (Japanese)' },
+  { code: 'ko', label: '한국어 (Korean)' },
+  { code: 'ta', label: 'தமிழ் (Tamil)' },
+  { code: 'te', label: 'తెలుగు (Telugu)' },
+  { code: 'bn', label: 'বাংলা (Bengali)' },
+  { code: 'ur', label: 'اردو (Urdu)' },
+] as const
+
+export const ETHNICITY_OPTIONS = [
+  'South Asian',
+  'East Asian',
+  'Southeast Asian',
+  'Middle Eastern',
+  'African',
+  'African American',
+  'Latino/Hispanic',
+  'European',
+  'Mediterranean',
+  'Caribbean',
+  'Pacific Islander',
+  'Indigenous/Native',
+  'Mixed/Other',
+] as const
+
 export const DEFAULT_PROFILE: PatientProfile = {
   age: 58,
   gender: 'male',
@@ -42,6 +77,8 @@ export const DEFAULT_PROFILE: PatientProfile = {
   bloodPressure: '145/92',
   restingHeartRate: 78,
   pastDiseases: ['hypertension', 'type 2 diabetes'],
+  ethnicity: 'South Asian',
+  language: 'en',
   rehabPlan: {
     title: 'Heart Recovery Path',
     acts: [

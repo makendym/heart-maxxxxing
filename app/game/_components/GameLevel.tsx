@@ -219,17 +219,7 @@ export default function GameLevel({
           )
         })}
 
-        {/* ===== Pipes ===== */}
-        {PIPE_POSITIONS.map((pos) => (
-          <div
-            key={`pipe-${pos}`}
-            style={{ left: pos * BLOCK_WIDTH + (BLOCK_WIDTH - 56) / 2 }}
-            className="absolute bottom-12 z-[5]"
-          >
-            <div className="pipe-top" />
-            <div className="pipe-body" />
-          </div>
-        ))}
+        {/* Pipes removed — hopping animation not polished enough yet */}
 
         {/* ===== Character (Mario) ===== */}
         <div

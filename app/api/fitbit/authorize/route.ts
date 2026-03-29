@@ -7,7 +7,7 @@ export async function GET() {
     return NextResponse.redirect(url)
   } catch {
     return NextResponse.json(
-      { error: 'Google OAuth not configured' },
+      { error: 'Fitbit OAuth not configured' },
       { status: 500 },
     )
   }
