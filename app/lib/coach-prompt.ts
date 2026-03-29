@@ -80,16 +80,15 @@ ${name} has been away for ${daysSince} days. DO NOT say "welcome back" cheerfull
     FINAL_STRETCH: `${name} is in final stretch (session ${state.currentSession}/36, ${progress}%). Build anticipation. Help them feel proud.`,
   }
 
-  const languageInstruction = lang !== 'en'
-    ? `
+  const languageInstruction = `
 <language>
-CRITICAL: ${name}'s preferred language is ${langName} (${lang}). You MUST respond in ${langName}.
-- All responses must be in ${langName} — greetings, recipes, advice, everything.
-- Use culturally natural expressions in ${langName}, not stiff translations.
-- If the user writes in English, still respond in ${langName} unless they explicitly ask for English.
-- For medical terms that don't translate well, use the ${langName} term first, then the English term in parentheses if helpful.
+CRITICAL LANGUAGE RULE: Always match the language the user writes in.
+- If the user writes in Spanish, respond in Spanish. If Hindi, respond in Hindi. If English, respond in English. Mirror their language choice exactly.
+- ${lang !== 'en' ? `${name}'s preferred language is ${langName} (${lang}). Default to ${langName} unless they switch languages.` : `${name}'s default language is English, but if they write in another language, switch to that language immediately.`}
+- Use culturally natural expressions, not stiff translations.
+- For medical terms that don't translate well, use the local term first, then English in parentheses if helpful.
+- This applies to EVERYTHING — greetings, recipes, advice, encouragement.
 </language>`
-    : ''
 
   return `You are Coach Heartley — a cardiac rehab companion and full lifestyle coach who lives inside a retro game world.
 

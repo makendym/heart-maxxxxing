@@ -80,8 +80,8 @@
 
 /* ===== ? Brick Block — Classic NES style ===== */
 .brick {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   background-color: var(--mario-question-bg);
   border: 4px solid var(--mario-question-border);
   border-top-color: var(--mario-question-shine);
@@ -90,7 +90,7 @@
   align-items: center;
   justify-content: center;
   font-family: "Press Start 2P", monospace;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--mario-question-border);
   cursor: pointer;
   position: relative;
@@ -200,9 +200,9 @@
 /* ===== Mario Jump 1 — hits brick from below ===== */
 @keyframes mario-jump-hit {
   0% { transform: translateY(0); }
-  40% { transform: translateY(-195px); }   /* head reaches brick bottom */
-  48% { transform: translateY(-200px); }   /* impact! head pushes into brick */
-  56% { transform: translateY(-190px); }   /* bounce back down slightly */
+  40% { transform: translateY(-150px); }   /* head reaches brick bottom */
+  48% { transform: translateY(-155px); }   /* impact! head pushes into brick */
+  56% { transform: translateY(-145px); }   /* bounce back down slightly */
   100% { transform: translateY(0); }        /* land */
 }
 
@@ -213,8 +213,8 @@
 /* ===== Mario Jump 2 — grabs powerup ===== */
 @keyframes mario-jump-grab {
   0% { transform: translateY(0); }
-  40% { transform: translateY(-260px); }   /* higher — grab the floating powerup */
-  50% { transform: translateY(-265px); }   /* peak */
+  40% { transform: translateY(-210px); }   /* higher — grab the floating powerup */
+  50% { transform: translateY(-215px); }   /* peak */
   100% { transform: translateY(0); }        /* land */
 }
 

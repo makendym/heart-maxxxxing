@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { TOTAL_SESSIONS, hasBrickAt } from '../../lib/game-state'
 import Character from './Character'
 import Brick from './Brick'
@@ -129,25 +129,32 @@ export default function GameLevel({
 }: GameLevelProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  const cameraOffset = useMemo(() => {
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800
+  // Scroll to keep Mario centered using actual container width
+  const scrollToMario = useCallback((smooth = true) => {
+    const el = viewportRef.current
+    if (!el) return
+    const containerWidth = el.clientWidth
     const characterX = currentSession * BLOCK_WIDTH + BLOCK_WIDTH / 2
-    const offset = characterX - viewportWidth / 2
-    return Math.max(0, offset)
+    const offset = Math.max(0, characterX - containerWidth / 2)
+    el.scrollTo({ left: offset, behavior: smooth ? 'smooth' : 'instant' })
   }, [currentSession])
 
+  // Re-center on session change
+  useEffect(() => { scrollToMario(true) }, [scrollToMario])
+
+  // Re-center on window resize (orientation change, etc.)
   useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ left: cameraOffset, behavior: 'smooth' })
-    }
-  }, [cameraOffset])
+    const handleResize = () => scrollToMario(false)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [scrollToMario])
 
   const totalWidth = (TOTAL_SESSIONS + 4) * BLOCK_WIDTH
 
   return (
     <div
       ref={viewportRef}
-      className="game-viewport w-full h-80 md:h-[420px] no-scrollbar overflow-x-auto"
+      className="game-viewport w-full h-[280px] sm:h-80 md:h-[420px] no-scrollbar overflow-x-auto"
     >
       <div className="relative" style={{ width: totalWidth, height: '100%' }}>
         {/* ===== Sky is set by .game-viewport background ===== */}
@@ -194,8 +201,8 @@ export default function GameLevel({
               key={`brick-${session}`}
               className="absolute"
               style={{
-                left: session * BLOCK_WIDTH + (BLOCK_WIDTH - 48) / 2,
-                bottom: 250,
+                left: session * BLOCK_WIDTH + (BLOCK_WIDTH - 40) / 2,
+                bottom: 200,
               }}
             >
               {/* Powerup item: pops out of brick, then grabbed by Mario */}

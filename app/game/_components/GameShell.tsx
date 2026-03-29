@@ -290,7 +290,7 @@ export default function GameShell() {
   const stormLevel = daysSince > 5 ? 2 : daysSince > 2 ? 1 : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-900 via-sky-800 to-indigo-900 flex flex-col">
+    <div className="h-dvh bg-gradient-to-b from-sky-900 via-sky-800 to-indigo-900 flex flex-col overflow-hidden">
       {/* HUD */}
       <GameHUD
         hearts={hearts}
