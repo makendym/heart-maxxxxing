@@ -116,7 +116,7 @@ RULES:
 ${langInstruction}`
 
   const { text } = await generateText({
-    model: google('gemini-2.5-flash-preview-05-20'),
+    model: google('gemini-3.1-flash-lite-preview'),
     system: systemPrompt,
     prompt: `Patient: ${playerName}
 Goal: "${goal}"

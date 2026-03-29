@@ -15,7 +15,7 @@ if (!API_KEY || API_KEY === 'your_api_key_here') {
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 // Using 1.5-flash for stable multimodal (audio) processing
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
 // Load Data
 const loadData = () => {
